@@ -1,6 +1,6 @@
 *NOTE:* This file is a template that you can use to create the README for your project. The *TODO* comments below will highlight the information you should be sure to include.
 
-# Your Project Title Here
+# Stroke Prediction Utility - Chad Puterbaugh
 
 *TODO:* Write a short introduction to your project.
 
@@ -8,6 +8,8 @@
 *OPTIONAL:* If your project has any special installation steps, this is where you should put it. To turn this project into a professional portfolio project, you are encouraged to explain how to set up this project in AzureML.
 
 ## Dataset
+https://www.kaggle.com/datasets/fedesoriano/stroke-prediction-dataset
+
 
 ### Overview
 *TODO*: Explain about the data you are using and where you got it from.
