@@ -61,7 +61,6 @@ def main():
     joblib.dump(value=model, filename='outputs/model.joblib')
     accuracy = model.score(x_test, y_test)
     y_pred = model.predict(x_test)
-    run.log("f1_score", f1_score(y_test, y_pred))
     print("f1_score", f1_score(y_test, y_pred))
     run.log("Accuracy", float(accuracy))
     print("Accuracy", float(accuracy))
