@@ -120,7 +120,6 @@ giving uniform probability to `C` from .001 to 10.0, and a discrete set of choic
 *TODO* Remeber to provide screenshots of the `RunDetails` widget as well as a screenshot of the best model trained with it's parameters.
 
 ## Model Deployment
-*TODO*: Give an overview of the deployed model and instructions on how to query the endpoint with a sample input.
 
 The deployed model takes a parameter per column of the original dataset, and returns a binary 1 or 0 as a prediction result for whether the arguments represent someone as likely to develop a stroke. The model is deployed with a score file and an environment as an Azure Container Instance. That container then is set up as an endpoint to receive data in a format that looks like this:
 ```
@@ -156,7 +155,7 @@ print(response.json())
 ```
 
 ## Screen Recording
-*TODO* Provide a link to a screen recording of the project in action. Remember that the screencast should demonstrate:
+https://youtu.be/eHw1Zxktemw
 - A working model
 - Demo of the deployed  model
 - Demo of a sample request sent to the endpoint and its response
