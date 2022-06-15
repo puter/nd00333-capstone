@@ -50,7 +50,7 @@ automl_settings = {
 `experiment_timeout_minutes` was selected to prevent any runaway experiments from being unfeasible economically.
 `max_concurrent_iterations` was capped at 4 to match the number of nodes in the compute instance
 `primary_metric` was set to `AUC_weighted` to reflect that the a positive stroke prediction is much rarer in the dataset than the negative case.
-See: https://neptune.ai/blog/balanced-accuracy
+See: https://docs.microsoft.com/en-us/azure/machine-learning/how-to-configure-auto-train#primary-metric
 
 ```
 automl_config = AutoMLConfig(compute_target=compute_target,
@@ -75,20 +75,32 @@ See: https://docs.microsoft.com/en-us/azure/machine-learning/how-to-configure-au
 
 ### Results
 
-The AutoML model performed much better than my hyperdrive run with a balanced accuracy of {xyz}. The best performing model was an ensemble model consisting of:
+The AutoML model performed much better than my hyperdrive run with a balanced accuracy of `AUC_Weighted:  0.8485172440280295`. The best performing model was an ensemble model consisting of 11 models and the following weights:
 
-*TODO* put in model parameters
++ StandardScalarWrapper, XGBoostClassifier - .06667
++ StandardScalarWrapper, RandomForestClassifier - .06667
++ SparseNormalizer, XGBoostClassifier - .2
++ StandardScalarWrapper, XGBoostClassifier - .06667
++ MaxAbsScalar, LogisticRegression - .06667
++ StandardScalarWrapper, XGBoostClassifier - .06667
++ StandardScalarWrapper, ExtraTreesClassifier - .06667
++ MaxAbsScalar, LogisticRegression - .06667
++ MaxAbsScalar, LightGBMClassifier - .2
++ SparseNormalizer, RandomForestClassifier - .06667
++ StandardScalarWrapper, LightGBMClassifier - .06667
 
 The model could be improved as more data is collected. Similarly, more care to ensure that a balance of classes are represented in the data could yield better accuracy. The data itself could be better contextualized to represent when the observation actually developed the stroke as it is currently unclear. 
 
 *TODO* Remeber to provide screenshots of the `RunDetails` widget as well as a screenshot of the best model trained with it's parameters.
+![](./screenshots/automl-run-details2.png)
+![](./screenshots/automl-run-details.png)
+![](./screenshots/automl-run-details3.png)
 
 ## Hyperparameter Tuning
 
 The algorithm I chose is a logistic regression for binary classification. 
 `model = LogisticRegression(C=args.C, max_iter=args.max_iter, class_weight='balanced').fit(x_train, y_train)`
-I chose to feed `C` and `max_iter` to hyperdrive, but due to the class imbalance, I used `class_weight='balanced'` to automatically adjust weights during regression. 
-# https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html?highlight=logistic#sklearn.linear_model.LogisticRegression
+I chose to feed `C` and `max_iter` to hyperdrive, but due to the class imbalance, I used `class_weight='balanced'` to automatically adjust weights during regression. See https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html?highlight=logistic#sklearn.linear_model.LogisticRegression
 The scope of the problem aims to predict whether a set of demographics will predict the onset of a stroke. Because the positive class is not as well represented, I opted to use a balanced accuracy score to optimize, but still capture overall accuracy. 
 Balanced Accuracy is supplied to the job through logging:
 `run.log("balanced_accuracy", balanced_accuracy_score(y_test, y_pred))`
@@ -100,10 +112,10 @@ hyperdrive_run_config = HyperDriveConfig(
     hyperparameter_sampling=param_sampling,
     primary_metric_name="balanced_accuracy", 
     primary_metric_goal=PrimaryMetricGoal.MAXIMIZE,
-    max_total_runs=20
+    max_total_runs=40
 )
 ```
-# https://neptune.ai/blog/balanced-accuracy
+See: https://neptune.ai/blog/balanced-accuracy
 
 I used a bayesian parameter sampler to feed the `C` and `max_iter` hyperparameters to the training script. 
 `
@@ -115,9 +127,12 @@ param_sampling = BayesianParameterSampling(
 giving uniform probability to `C` from .001 to 10.0, and a discrete set of choices for `max_iter'. 
 
 ### Results
-*TODO*: What are the results you got with your model? What were the parameters of the model? How could you have improved it?
 
-*TODO* Remeber to provide screenshots of the `RunDetails` widget as well as a screenshot of the best model trained with it's parameters.
+The resulting model after hyperparameter turning yielded a balanced accuracy of .8195. The parameters that the optimal model utilized is a `C` value of 6.703 and a `max_iter` of 500. If I were to study this problem longer, I would play with more parameters within logitistic regression, but also I would have tried a few other algorithms, such as random forest. I would have also liked to play more with the max_iter parameter because the higher level of iterations tended to perform worse much more regularly than the smaller number of iterations. I'd like to adjust the hyperparameter sampler to reflect that. 
+
+![](./screenshots/hyper-run-details2.png)
+![](./screenshots/hyper-run-details3.png)
+![](./screenshots/hyper-parameters.png)
 
 ## Model Deployment
 
@@ -155,7 +170,9 @@ print(response.json())
 ```
 
 ## Screen Recording
-https://youtu.be/eHw1Zxktemw
+
+[![Screencast](https://img.youtube.com/vi/eHw1Zxktemw/0.jpg)](https://www.youtube.com/watch?v=eHw1Zxktemw)
+
 - A working model
 - Demo of the deployed  model
 - Demo of a sample request sent to the endpoint and its response
