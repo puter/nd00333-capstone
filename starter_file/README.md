@@ -44,12 +44,12 @@ The Kaggle data I used was accessed in May of 2022, and is provided as part of t
 automl_settings = {
     "experiment_timeout_minutes": 20,
     "max_concurrent_iterations": 4, 
-    "primary_metric" : 'balanced_accuracy'
+    "primary_metric" : 'AUC_weighted'
 }
 ```
 `experiment_timeout_minutes` was selected to prevent any runaway experiments from being unfeasible economically.
 `max_concurrent_iterations` was capped at 4 to match the number of nodes in the compute instance
-`primary_metric` was set to `balanced_accuracy` to reflect that the a positive stroke prediction is much rarer in the dataset than the negative case.
+`primary_metric` was set to `AUC_weighted` to reflect that the a positive stroke prediction is much rarer in the dataset than the negative case.
 See: https://neptune.ai/blog/balanced-accuracy
 
 ```
@@ -71,6 +71,8 @@ The primary configurations worth noting in the `AutoMLConfig` are:
 `enable_early_stopping` allows any experiments to stop early to save compute costs
 `featurization` set to `auto` allows AutoML to attempt to find the best set of features to represent the data
 
+See: https://docs.microsoft.com/en-us/azure/machine-learning/how-to-configure-auto-train
+
 ### Results
 
 The AutoML model performed much better than my hyperdrive run with a balanced accuracy of {xyz}. The best performing model was an ensemble model consisting of:
@@ -82,8 +84,35 @@ The model could be improved as more data is collected. Similarly, more care to e
 *TODO* Remeber to provide screenshots of the `RunDetails` widget as well as a screenshot of the best model trained with it's parameters.
 
 ## Hyperparameter Tuning
-*TODO*: What kind of model did you choose for this experiment and why? Give an overview of the types of parameters and their ranges used for the hyperparameter search
 
+The algorithm I chose is a logistic regression for binary classification. 
+`model = LogisticRegression(C=args.C, max_iter=args.max_iter, class_weight='balanced').fit(x_train, y_train)`
+I chose to feed `C` and `max_iter` to hyperdrive, but due to the class imbalance, I used `class_weight='balanced'` to automatically adjust weights during regression. 
+# https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html?highlight=logistic#sklearn.linear_model.LogisticRegression
+The scope of the problem aims to predict whether a set of demographics will predict the onset of a stroke. Because the positive class is not as well represented, I opted to use a balanced accuracy score to optimize, but still capture overall accuracy. 
+Balanced Accuracy is supplied to the job through logging:
+`run.log("balanced_accuracy", balanced_accuracy_score(y_test, y_pred))`
+And set as the primary metric in the run config.
+
+```
+hyperdrive_run_config = HyperDriveConfig(
+    run_config=estimator,
+    hyperparameter_sampling=param_sampling,
+    primary_metric_name="balanced_accuracy", 
+    primary_metric_goal=PrimaryMetricGoal.MAXIMIZE,
+    max_total_runs=20
+)
+```
+# https://neptune.ai/blog/balanced-accuracy
+
+I used a bayesian parameter sampler to feed the `C` and `max_iter` hyperparameters to the training script. 
+`
+param_sampling = BayesianParameterSampling(
+    {'C': uniform(0.001, 10.0),
+    'max_iter': choice([500, 1000, 1500, 2000, 2500, 5000])}
+)
+`
+giving uniform probability to `C` from .001 to 10.0, and a discrete set of choices for `max_iter'. 
 
 ### Results
 *TODO*: What are the results you got with your model? What were the parameters of the model? How could you have improved it?
@@ -92,6 +121,39 @@ The model could be improved as more data is collected. Similarly, more care to e
 
 ## Model Deployment
 *TODO*: Give an overview of the deployed model and instructions on how to query the endpoint with a sample input.
+
+The deployed model takes a parameter per column of the original dataset, and returns a binary 1 or 0 as a prediction result for whether the arguments represent someone as likely to develop a stroke. The model is deployed with a score file and an environment as an Azure Container Instance. That container then is set up as an endpoint to receive data in a format that looks like this:
+```
+data =  {
+  "Inputs": {
+    "data": [
+      {
+        "gender": "Male",
+        "age": 67,
+        "hypertension": 0,
+        "heart_disease": 1,
+        "ever_married": "Yes",
+        "work_type": "Private",
+        "Residence_type": "Urban",
+        "avg_glucose_level": 228.69,
+        "bmi": 36.6,
+        "smoking_status": "formerly smoked"
+      },
+    ]
+  },
+  "GlobalParameters": {
+    "method": "predict"
+  }
+}
+```
+One would query the endpoint by hitting the endpoint with a payload defined as seen above, and structured into a request as seen below:
+```
+uri = service.scoring_uri
+headers = {"Content-Type": "application/json"}
+data = json.dumps(data)
+response = requests.post(uri, data=data, headers=headers)
+print(response.json())
+```
 
 ## Screen Recording
 *TODO* Provide a link to a screen recording of the project in action. Remember that the screencast should demonstrate:
