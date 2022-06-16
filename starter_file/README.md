@@ -169,6 +169,17 @@ response = requests.post(uri, data=data, headers=headers)
 print(response.json())
 ```
 
+The model's environment dependencies are located in `conda_env_v_1_0_0.yml`
+
+This shows the model deployed:
+![](./screenshots/model-deployed.png)
+
+This shows the model registered:
+![](./screenshots/model-registered.png)
+
+This shows the model endpoint up and healthy:
+![](./screenshots/endpoint-healthy.png)
+
 ## Screen Recording
 
 [![Screencast](https://img.youtube.com/vi/eHw1Zxktemw/0.jpg)](https://www.youtube.com/watch?v=eHw1Zxktemw)
